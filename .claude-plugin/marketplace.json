@@ -1,0 +1,14 @@
+{
+  "name": "diego-poder-marketplace",
+  "description": "Marketplace privado del firm CAVV para distribuir el plugin DIEGO",
+  "plugins": [
+    {
+      "name": "diego-poder",
+      "description": "Agente DIEGO para sustituciones de poder y briefing diario de audiencias",
+      "source": {
+        "source": "github",
+        "repo": "Abogado-3/diego-poder"
+      }
+    }
+  ]
+}

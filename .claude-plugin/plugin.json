@@ -1,0 +1,11 @@
+{
+  "name": "diego-poder",
+  "version": "0.1.0",
+  "description": "DIEGO: agente para abogados colombianos. Prepara sustituciones de poder y deja borrador en Outlook. Incluye briefing diario de audiencias.",
+  "author": {
+    "name": "Carlos Andrés Vargas Vargas",
+    "email": "cvargas.abogado@gmail.com"
+  },
+  "license": "MIT",
+  "keywords": ["legal", "colombia", "outlook", "sustitucion-poder", "abogados"]
+}
