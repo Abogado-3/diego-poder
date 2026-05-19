@@ -1,13 +1,13 @@
 # Crea un borrador en Outlook for Windows con un PDF adjunto.
-# Uso (en PowerShell):
-#   .\crear_borrador.ps1 -Recipient "x@y.com" -Subject "..." -Body "..." -Attachment "C:\ruta\al.pdf"
-# Si -Recipient es "", el borrador se crea sin destinatario para que el usuario lo complete.
+# Uso:
+#   .\crear_borrador.ps1 -Recipient "x@y.com" -Subject "..." -Body "..." -Attachment "C:\ruta\al.pdf" [-BodyIsHtml]
 
 param(
     [Parameter(Mandatory=$false)][string]$Recipient = "",
     [Parameter(Mandatory=$true)][string]$Subject,
     [Parameter(Mandatory=$true)][string]$Body,
-    [Parameter(Mandatory=$true)][string]$Attachment
+    [Parameter(Mandatory=$true)][string]$Attachment,
+    [Parameter(Mandatory=$false)][switch]$BodyIsHtml
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,7 +27,13 @@ try {
 # 0 = olMailItem
 $mail = $outlook.CreateItem(0)
 $mail.Subject = $Subject
-$mail.Body = $Body
+
+if ($BodyIsHtml) {
+    $mail.HTMLBody = $Body
+} else {
+    $mail.Body = $Body
+}
+
 if ($Recipient -ne "") {
     $mail.To = $Recipient
 }
@@ -35,8 +41,8 @@ if ($Recipient -ne "") {
 $absPath = (Resolve-Path -LiteralPath $Attachment).Path
 $mail.Attachments.Add($absPath) | Out-Null
 
-# Mostrar la ventana del borrador (NO enviar)
 $mail.Display() | Out-Null
 
-Write-Output "OK: borrador creado en Outlook (Windows)"
+$bodyKind = if ($BodyIsHtml) { "html" } else { "plain" }
+Write-Output "OK: borrador creado en Outlook (Windows, $bodyKind)"
 exit 0

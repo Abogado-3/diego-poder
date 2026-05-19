@@ -50,29 +50,11 @@ Pregunta al usuario por estos datos. Si el prompt inicial ya los trae, úsalos s
 
 # Flujo de trabajo
 
-## Paso 1: Generar el PDF
-
-```bash
-python3 "$HOME/.claude/diego-poder/scripts/generar.py" \
-  --juzgado "{juzgado}" \
-  --proceso "{proceso}" \
-  --demandante "{demandante}" \
-  --demandado "{demandado}" \
-  --radicado "{radicado}" \
-  --cliente-nombre "{cliente_nombre}" \
-  --cliente-rol "{demandado|demandante}" \
-  --fecha-audiencia "{fecha_audiencia}"
-```
-
-(No pases `--output` — el script lo genera automáticamente en `~/Documents/DIEGO - Sustituciones/`.)
-
-El script imprime la ruta absoluta del PDF generado. Guárdala.
-
-## Paso 2: Encontrar el correo del juzgado
+## Paso 1: Encontrar el correo del juzgado (PRIMERO — va dentro del cuerpo del email)
 
 **Cascada en orden estricto. Pasa al siguiente nivel solo si el actual no resuelve.**
 
-### 2a. Consultar el directorio CSV compartido (PRIMERO)
+### 1a. Consultar el directorio CSV compartido
 
 ```bash
 python3 "$HOME/.claude/diego-poder/scripts/directorio.py" buscar "<nombre del juzgado>" --top 5
@@ -80,23 +62,23 @@ python3 "$HOME/.claude/diego-poder/scripts/directorio.py" buscar "<nombre del ju
 
 - **score >= 0.8** y match único → úsalo.
 - **score >= 0.8** con ambigüedad → muestra opciones (AskUserQuestion).
-- **score < 0.8** o sin matches → pasa al paso 2b.
+- **score < 0.8** o sin matches → pasa al paso 1b.
 
-### 2b. Buscar en Outlook
+### 1b. Buscar en Outlook
 
 Usa `mcp__bbe910fa-2e02-4ffd-bcb3-65bc4ed98b9d__outlook_email_search` con palabras clave del juzgado.
 Identifica dominios `@cendoj.ramajudicial.gov.co`, `@deaj.ramajudicial.gov.co`, `@ramajudicial.gov.co`.
 - Match único claro → úsalo.
 - Múltiples → pregunta (AskUserQuestion).
-- Sin matches → 2c.
+- Sin matches → 1c.
 
-### 2c. Preguntar al usuario (último recurso)
+### 1c. Preguntar al usuario (último recurso)
 
-AskUserQuestion para pedir el correo.
+AskUserQuestion para pedir el correo. (Si el usuario tampoco lo tiene, déjalo vacío y avísale que el correo se mandará sin destinatario para que él lo complete antes de enviarlo.)
 
-### 2d. Aprender (cuando 2b o 2c resolvieron)
+### 1d. Aprender (cuando 1b o 1c resolvieron)
 
-Agrega el correo al directorio compartido del firm (todos se benefician):
+Agrega el correo al directorio compartido del firm:
 
 ```bash
 python3 "$HOME/.claude/diego-poder/scripts/directorio.py" agregar \
@@ -110,65 +92,76 @@ python3 "$HOME/.claude/diego-poder/scripts/directorio.py" agregar \
 
 Si la respuesta es `{"status": "ya_existe"}`, ignora.
 
-**Nunca inventes correos del juzgado. Si no estás seguro, pregunta.**
+**Nunca inventes correos del juzgado.**
 
-## Paso 3: Preparar el cuerpo del email
-
-**Asunto:** `Sustitución de Poder - Rad. {radicado} - {demandante} vs {demandado}`
-
-**Cuerpo (texto plano):**
-```
-Señores
-{Juzgado}
-
-Cordial saludo.
-
-De manera atenta, me permito remitir escrito de SUSTITUCIÓN DE PODER dentro del proceso de la referencia, para los fines pertinentes.
-
-Datos del proceso:
-- Radicado: {radicado}
-- Proceso: {proceso}
-- Demandante: {demandante}
-- Demandado: {demandado}
-
-Quedo atento a cualquier requerimiento.
-
-Cordialmente,
-
-{nombre del sustituyente del firm}
-```
-
-Para el bloque de firma, lee los datos con:
+## Paso 2: Generar el PDF (adjunto)
 
 ```bash
-python3 -c "import sys, os; sys.path.insert(0, os.path.expanduser('~/.claude/diego-poder/scripts')); import diego_paths; c=diego_paths.shared_config()['sustituyente']; print(c['nombre']); print('C.C.', c['cc']); print('T.P.', c['tp']); print(c['correo'])"
+python3 "$HOME/.claude/diego-poder/scripts/generar.py" \
+  --juzgado "{juzgado}" \
+  --proceso "{proceso}" \
+  --demandante "{demandante}" \
+  --demandado "{demandado}" \
+  --radicado "{radicado}" \
+  --cliente-nombre "{cliente_nombre}" \
+  --cliente-rol "{demandado|demandante}" \
+  --fecha-audiencia "{fecha_audiencia}"
 ```
 
-## Paso 4: Confirmar con el usuario antes de tocar Outlook
+El script imprime la ruta absoluta del PDF. Guárdala como `PDF_PATH`.
+
+## Paso 3: Generar el cuerpo HTML del correo
+
+El correo lleva el texto formal completo (con tabla y negritas) — no un cover note corto.
+
+```bash
+HTML_PATH="${PDF_PATH%.pdf}.html"
+python3 "$HOME/.claude/diego-poder/scripts/generar_correo.py" \
+  --juzgado "{juzgado}" \
+  --correo-juzgado "{correo_juzgado}" \
+  --proceso "{proceso}" \
+  --demandante "{demandante}" \
+  --demandado "{demandado}" \
+  --radicado "{radicado}" \
+  --cliente-nombre "{cliente_nombre}" \
+  --cliente-rol "{demandado|demandante}" \
+  --fecha-audiencia "{fecha_audiencia}" \
+  --output "$HTML_PATH"
+```
+
+Guarda la ruta como `HTML_PATH`. (Si `{correo_juzgado}` es vacío, omite ese argumento.)
+
+## Paso 4: Definir asunto
+
+**Asunto:** `SUSTITUCIÓN DE PODER PROCESO {radicado}`
+
+(Solo el radicado, sin guiones ni partes. Es el formato estándar del firm.)
+
+## Paso 5: Confirmar con el usuario antes de tocar Outlook
 
 Muéstrale resumen claro:
-- Destinatario
-- Asunto
-- Cuerpo
-- Adjunto (ruta del PDF)
+- **Destinatario:** {correo_juzgado} (o "vacío — completar manualmente" si no se encontró)
+- **Asunto:** SUSTITUCIÓN DE PODER PROCESO {radicado}
+- **Cuerpo:** "Texto formal HTML — incluye encabezado al juzgado, tabla del proceso, párrafo de sustitución, facultades art. 77 CGP, solicitud de enlaces, firma." (Puedes mostrarle el HTML resumido o describirlo.)
+- **Adjunto:** {PDF_PATH}
 
 Pregunta: "¿Creo el borrador en Outlook?" Espera confirmación afirmativa explícita.
 
-## Paso 5: Crear el borrador (cross-platform Mac/Windows)
+## Paso 6: Crear el borrador (cross-platform Mac/Windows, body HTML)
 
 ```bash
 python3 "$HOME/.claude/diego-poder/scripts/crear_borrador.py" \
   --to "{correo_juzgado}" \
-  --subject "{asunto}" \
-  --body "{cuerpo}" \
-  --attachment "{ruta_pdf}"
+  --subject "SUSTITUCIÓN DE PODER PROCESO {radicado}" \
+  --body-html-file "$HTML_PATH" \
+  --attachment "$PDF_PATH"
 ```
 
-El script detecta el SO automáticamente (osascript en Mac, PowerShell en Windows).
+El script detecta el SO automáticamente y manda el body como HTML.
 
-## Paso 6: Reportar
+## Paso 7: Reportar
 
-Dile: "Borrador listo en Outlook. Revísalo y dale Enviar. **NO envié nada por mi cuenta.**" Indica la ruta del PDF.
+Dile: "Borrador listo en Outlook con cuerpo HTML formateado + PDF adjunto. Revísalo y dale Enviar. **NO envié nada por mi cuenta.**" Indica la ruta del PDF.
 
 # Modo Briefing (cuando el usuario pide "audiencias de hoy", "briefing", etc.)
 
