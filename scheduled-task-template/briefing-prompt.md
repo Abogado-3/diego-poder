@@ -78,7 +78,7 @@ Schema:
 ```bash
 BRIEFINGS_DIR=$(python3 -c "import sys; sys.path.insert(0, '$SCRIPTS_DIR'); import diego_paths; print(diego_paths.briefings_dir())")
 mkdir -p "$BRIEFINGS_DIR"
-# escribe el JSON en $BRIEFINGS_DIR/$TODAY.json
+# escribe el JSON en "$BRIEFINGS_DIR/$TODAY.json"
 ```
 
 ## 9. Notifica al usuario

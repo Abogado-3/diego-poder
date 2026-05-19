@@ -25,7 +25,7 @@ Si el usuario te pide "configura mi briefing diario" o "registra el briefing", u
 - `taskId`: `briefing-audiencias-diego`
 - `description`: `Briefing matutino diario de audiencias para DIEGO. Cruza calendario de Outlook con índice de casos del firm.`
 - `cronExpression`: `5 8 * * *`
-- `prompt`: el contenido del archivo `~/.claude/diego-poder/scheduled-task-template/briefing-prompt.md` (léelo con Read primero y pásalo como prompt).
+- `prompt`: el contenido del archivo `$HOME/.claude/diego-poder/scheduled-task-template/briefing-prompt.md` (léelo con Read primero y pásalo como prompt).
 
 Antes de crear, verifica si ya existe con `mcp__scheduled-tasks__list_scheduled_tasks`. Si ya existe, solo confirma.
 
@@ -53,7 +53,7 @@ Pregunta al usuario por estos datos. Si el prompt inicial ya los trae, úsalos s
 ## Paso 1: Generar el PDF
 
 ```bash
-python3 "~/.claude/diego-poder/scripts/generar.py" \
+python3 "$HOME/.claude/diego-poder/scripts/generar.py" \
   --juzgado "{juzgado}" \
   --proceso "{proceso}" \
   --demandante "{demandante}" \
@@ -75,7 +75,7 @@ El script imprime la ruta absoluta del PDF generado. Guárdala.
 ### 2a. Consultar el directorio CSV compartido (PRIMERO)
 
 ```bash
-python3 "~/.claude/diego-poder/scripts/directorio.py" buscar "<nombre del juzgado>" --top 5
+python3 "$HOME/.claude/diego-poder/scripts/directorio.py" buscar "<nombre del juzgado>" --top 5
 ```
 
 - **score >= 0.8** y match único → úsalo.
@@ -99,7 +99,7 @@ AskUserQuestion para pedir el correo.
 Agrega el correo al directorio compartido del firm (todos se benefician):
 
 ```bash
-python3 "~/.claude/diego-poder/scripts/directorio.py" agregar \
+python3 "$HOME/.claude/diego-poder/scripts/directorio.py" agregar \
   --email "<correo>" \
   --nombre "<nombre completo del juzgado>" \
   --departamento "<departamento>" \
@@ -141,7 +141,7 @@ Cordialmente,
 Para el bloque de firma, lee los datos con:
 
 ```bash
-python3 -c "import sys; sys.path.insert(0, '~/.claude/diego-poder/scripts'); import diego_paths, json; c=diego_paths.shared_config()['sustituyente']; print(c['nombre']); print('C.C.', c['cc']); print('T.P.', c['tp']); print(c['correo'])"
+python3 -c "import sys, os; sys.path.insert(0, os.path.expanduser('~/.claude/diego-poder/scripts')); import diego_paths; c=diego_paths.shared_config()['sustituyente']; print(c['nombre']); print('C.C.', c['cc']); print('T.P.', c['tp']); print(c['correo'])"
 ```
 
 ## Paso 4: Confirmar con el usuario antes de tocar Outlook
@@ -157,7 +157,7 @@ Pregunta: "¿Creo el borrador en Outlook?" Espera confirmación afirmativa expl�
 ## Paso 5: Crear el borrador (cross-platform Mac/Windows)
 
 ```bash
-python3 "~/.claude/diego-poder/scripts/crear_borrador.py" \
+python3 "$HOME/.claude/diego-poder/scripts/crear_borrador.py" \
   --to "{correo_juzgado}" \
   --subject "{asunto}" \
   --body "{cuerpo}" \
@@ -177,7 +177,7 @@ Dile: "Borrador listo en Outlook. Revísalo y dale Enviar. **NO envié nada por 
 Ruta:
 
 ```bash
-python3 -c "import sys; sys.path.insert(0, '~/.claude/diego-poder/scripts'); import diego_paths; from datetime import date; print(diego_paths.briefings_dir() / f'{date.today().isoformat()}.json')"
+python3 -c "import sys, os; sys.path.insert(0, os.path.expanduser('~/.claude/diego-poder/scripts')); import diego_paths; from datetime import date; print(diego_paths.briefings_dir() / f'{date.today().isoformat()}.json')"
 ```
 
 Si NO existe:
@@ -200,9 +200,9 @@ Ejecuta flujo normal (Pasos 1-6).
 
 1. `mcp__...outlook_calendar_search` con query "*", afterDateTime "today 00:00", beforeDateTime "today 23:59".
 2. Filtra subjects con "audiencia", "AUD", "art 372", "RAD".
-3. Por cada audiencia: `python3 "~/.claude/diego-poder/scripts/indice_casos.py" buscar "<subject>" --top 1`.
+3. Por cada audiencia: `python3 "$HOME/.claude/diego-poder/scripts/indice_casos.py" buscar "<subject>" --top 1`
 4. Decodifica juzgado del radicado.
-5. `python3 "~/.claude/diego-poder/scripts/directorio.py" buscar "<juzgado>" --top 1`.
+5. `python3 "$HOME/.claude/diego-poder/scripts/directorio.py" buscar "<juzgado>" --top 1`
 6. Sigue desde B2.
 
 # Reglas estrictas
