@@ -13,26 +13,15 @@ TODAY=$(date +%Y-%m-%d)
 echo $TODAY
 ```
 
-## 2. Resuelve las rutas del plugin DIEGO
-
-El plugin está instalado pero esta tarea programada NO corre dentro del contexto del plugin, así que `${CLAUDE_PLUGIN_ROOT}` puede no estar disponible. Resuelve a mano:
+## 2. Verifica que DIEGO esté instalado
 
 ```bash
-python3 -c "
-from pathlib import Path
-import os
-# El plugin se instala en ~/.claude/plugins/.../diego-poder/
-candidates = list(Path.home().glob('.claude/plugins/*/diego-poder/scripts/diego_paths.py'))
-if candidates:
-    print(str(candidates[0].parent))
-else:
-    print('NOT_FOUND')
-"
+SCRIPTS_DIR="$HOME/.claude/diego-poder/scripts"
+if [ ! -f "$SCRIPTS_DIR/diego_paths.py" ]; then
+  echo "ERROR: DIEGO no está instalado en este usuario. Corre install.sh primero."
+  exit 1
+fi
 ```
-
-Si imprime NOT_FOUND, el plugin no está instalado en este usuario — termina con error.
-
-Guarda esa ruta como `SCRIPTS_DIR`.
 
 ## 3. Busca eventos del día en el calendario de Outlook
 
